@@ -9,6 +9,7 @@ namespace MongoDBDemo
 {
 	class Program
 	{
+		[Obsolete]
 		static void Main(string[] args)
 		{
 			MongoCRUD db = new MongoCRUD("AddressBook");
@@ -28,17 +29,21 @@ namespace MongoDBDemo
 
 			//db.InsertRecord("Users", person);
 
-			var recs = db.LoadRecord<PersonModel>("Users");
+			//var recs = db.LoadRecord<PersonModel>("Users");
 
-			foreach (var rec in recs)
-			{
-				Console.WriteLine($"{ rec.Id }: { rec.FirstName } { rec.LastName }");
-				if (rec.PrimaryAddress != null)
-				{
-					Console.WriteLine(rec.PrimaryAddress.City);
-				}
-				Console.WriteLine();
-			}
+			//foreach (var rec in recs)
+			//{
+			//	Console.WriteLine($"{ rec.Id }: { rec.FirstName } { rec.LastName }");
+			//	if (rec.PrimaryAddress != null)
+			//	{
+			//		Console.WriteLine(rec.PrimaryAddress.City);
+			//	}
+			//	Console.WriteLine();
+			//}
+
+			var oneRec = db.LoadRecordById<PersonModel>("Users", new Guid("bdc73c6f-5530-42c2-bd4e-e2b324762431"));
+			oneRec.DateOfBirth = new DateTime(1982, 10, 31, 0, 0, 0, 0, DateTimeKind.Utc);
+			db.UpsertRecord("Users", oneRec.Id, oneRec);
 
 			Console.ReadLine();
 		}
@@ -49,8 +54,9 @@ namespace MongoDBDemo
 		public Guid Id { get; set; }
 		public string FirstName { get; set; }
 		public string LastName { get; set; }
-
 		public AddressModel PrimaryAddress { get; set; }
+		[BsonElement("dob")]
+		public DateTime DateOfBirth { get; set; }
 	}
 
 	public class AddressModel
@@ -60,7 +66,8 @@ namespace MongoDBDemo
 		public string State { get; set; }
 		public string ZipCode { get; set; }
 	}
-		public class MongoCRUD
+
+	public class MongoCRUD
 	{
 		private IMongoDatabase db;
 
@@ -75,11 +82,39 @@ namespace MongoDBDemo
 			collection.InsertOne(record);
 		}
 
-		public List<T> LoadRecord<T>(string table)
+		public List<T> LoadRecords<T>(string table)
 		{
 			var collection = db.GetCollection<T>(table);
 
 			return collection.Find(new BsonDocument()).ToList();
 		}
+
+		public T LoadRecordById<T>(string table, Guid id)
+		{
+			var collection = db.GetCollection<T>(table);
+			var filter = Builders<T>.Filter.Eq("Id", id);
+
+			return collection.Find(filter).First();
+		}
+
+		[Obsolete]
+		public void UpsertRecord<T>(string table, Guid id, T record)
+		{
+			var collection = db.GetCollection<T>(table);
+
+			var result = collection.ReplaceOne(
+				new BsonDocument("_id", id),
+				record,
+				new UpdateOptions { IsUpsert = true });
+
+		}
+
+		public void DeleteRecord<T>(string table, Guid id)
+		{
+			var collection = db.GetCollection<T>(table);
+			var filter = Builders<T>.Filter.Eq("Id", id);
+			collection.DeleteOne(filter);
+		}
+
 	}
 }
