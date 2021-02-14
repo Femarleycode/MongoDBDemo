@@ -13,20 +13,33 @@ namespace MongoDBDemo
 		{
 			MongoCRUD db = new MongoCRUD("AddressBook");
 
-			PersonModel person = new PersonModel
-			{
-				FirstName = "Joe",
-				LastName = "Smith",
-				PrimaryAddress = new AddressModel
-				{
-					StreetAddress = "101 Oak Street",
-					City = "Scranton",
-					State = "PA",
-					ZipCode = "18512"
-				}
-			};
+			//PersonModel person = new PersonModel
+			//{
+			//	FirstName = "Joe",
+			//	LastName = "Smith",
+			//	PrimaryAddress = new AddressModel
+			//	{
+			//		StreetAddress = "101 Oak Street",
+			//		City = "Scranton",
+			//		State = "PA",
+			//		ZipCode = "18512"
+			//	}
+			//};
 
-			db.InsertRecord("Users", person);
+			//db.InsertRecord("Users", person);
+
+			var recs = db.LoadRecord<PersonModel>("Users");
+
+			foreach (var rec in recs)
+			{
+				Console.WriteLine($"{ rec.Id }: { rec.FirstName } { rec.LastName }");
+				if (rec.PrimaryAddress != null)
+				{
+					Console.WriteLine(rec.PrimaryAddress.City);
+				}
+				Console.WriteLine();
+			}
+
 			Console.ReadLine();
 		}
 	}
